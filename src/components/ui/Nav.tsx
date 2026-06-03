@@ -5,13 +5,13 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const navLinks = [
-  { label: 'Work', href: '/work' },
-  { label: 'Capabilities', href: '/capabilities' },
+  { label: 'Work', href: '/#work' },
+  { label: 'Capabilities', href: '/#capabilities' },
   { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Contact', href: '/#contact' },
 ]
 
-export function Nav() {
+export default function Nav() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -26,33 +26,74 @@ export function Nav() {
     <>
       <nav className={`nav-fixed ${scrolled ? 'nav-scrolled' : ''}`}>
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div style={{width:32,height:32,borderRadius:8,background:'var(--gradient-violet)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <span style={{fontFamily:'var(--font-sans)',fontSize:'0.75rem',fontWeight:700,color:'white'}}>MU</span>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center font-display font-bold text-sm text-white transition-all duration-300 group-hover:scale-105"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+              MU
             </div>
-            <span style={{fontFamily:'var(--font-sans)',fontSize:'0.8rem',fontWeight:600,letterSpacing:'0.08em',color:'var(--text-primary)',textDecoration:'none'}}>Mustafa Uzair</span>
+            <span className="font-display font-semibold text-cream text-base hidden sm:block">Mustafa Uzair</span>
           </Link>
+
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
-              return (
-                <Link key={link.href} href={link.href} style={{fontFamily:'var(--font-sans)',fontSize:'0.8rem',fontWeight:500,letterSpacing:'0.05em',color:isActive?'var(--accent-violet-light)':'var(--text-secondary)',textDecoration:'none',transition:'color 0.2s',position:'relative',paddingBottom:4}}>
-                  {link.label}
-                  {isActive && <span style={{position:'absolute',bottom:-4,left:0,right:0,height:1,background:'var(--gradient-hero)'}} />}
-                </Link>
-              )
-            })}
-            <Link href="/contact" className="btn-primary" style={{padding:'10px 22px',fontSize:'0.75rem'}}>Let&apos;s Talk <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-sm font-mono tracking-wide text-secondary hover:text-cream transition-colors duration-300 relative group"
+              >
+                {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-violet-500 group-hover:w-full transition-all duration-300" />
+              </Link>
+            ))}
           </div>
-          <button className="md:hidden glass flex items-center justify-center rounded-lg" style={{width:40,height:40,border:'none',cursor:'pointer',background:'rgba(255,255,255,0.06)',backdropFilter:'blur(20px)'}} onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">{menuOpen?<path d="M3 3l12 12M15 3L3 15" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>:<><line x1="2" y1="5" x2="16" y2="5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/><line x1="2" y1="9" x2="16" y2="9" stroke="white" strokeWidth="1.5" strokeLinecap="round"/><line x1="2" y1="13" x2="16" y2="13" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></>}</svg>
+
+          {/* CTA */}
+          <div className="hidden md:flex items-center gap-4">
+            <a href="mailto:mustafauzair@example.com"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-mono tracking-wide text-white transition-all duration-300 hover:opacity-90 hover:scale-105"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+              LET\'S TALK →
+            </a>
+          </div>
+
+          {/* Mobile menu toggle */}
+          <button
+            className="md:hidden text-secondary hover:text-cream transition-colors p-2"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <div className="w-6 flex flex-col gap-1.5">
+              <span className={`h-px bg-current transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`h-px bg-current transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`h-px bg-current transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            </div>
           </button>
         </div>
       </nav>
+
+      {/* Mobile drawer */}
       {menuOpen && (
-        <div style={{position:'fixed',inset:0,zIndex:999,background:'rgba(10,10,15,0.96)',backdropFilter:'blur(40px)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:32}}>
-          <button style={{position:'absolute',top:24,right:24,background:'none',border:'none',cursor:'pointer',color:'var(--text-primary)'}} onClick={() => setMenuOpen(false)}><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></button>
-          {navLinks.map((link) => (<Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} style={{fontFamily:'var(--font-sans)',fontSize:'2.5rem',fontWeight:600,color:pathname===link.href?'var(--accent-violet-light)':'var(--text-primary)',textDecoration:'none',letterSpacing:'-0.02em'}}>{link.label}</Link>))}
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMenuOpen(false)}>
+          <div className="absolute top-16 left-0 right-0 mx-4 rounded-2xl p-6 border border-white/10"
+            style={{ background: 'rgba(22,22,30,0.95)', backdropFilter: 'blur(20px)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-4">
+              {navLinks.map((link) => (
+                <Link key={link.label} href={link.href}
+                  className="text-secondary hover:text-cream transition-colors font-mono text-sm py-2 border-b border-white/5"
+                  onClick={() => setMenuOpen(false)}>
+                  {link.label}
+                </Link>
+              ))}
+              <a href="mailto:mustafauzair@example.com"
+                className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-mono text-white"
+                style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+                LET\'S TALK →
+              </a>
+            </div>
+          </div>
         </div>
       )}
     </>
