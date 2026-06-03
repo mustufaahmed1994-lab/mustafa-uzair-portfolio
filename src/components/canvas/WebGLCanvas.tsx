@@ -1,162 +1,61 @@
 'use client';
-
-import { useRef, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
-
-const vertexShader = `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-
-const fragmentShader = `
-uniform float uTime;
-uniform vec2 uResolution;
-uniform vec2 uMouse;
-uniform float uVelocity;
-varying vec2 vUv;
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-vec3 fade(vec3 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
-float cnoise(vec3 P) {
-  vec3 Pi0 = floor(P); vec3 Pi1 = Pi0 + vec3(1.0);
-  Pi0 = mod289(Pi0); Pi1 = mod289(Pi1);
-  vec3 Pf0 = fract(P); vec3 Pf1 = Pf0 - vec3(1.0);
-  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-  vec4 iy = vec4(Pi0.yy, Pi1.yy);
-  vec4 iz0 = Pi0.zzzz; vec4 iz1 = Pi1.zzzz;
-  vec4 ixy = permute(permute(ix) + iy);
-  vec4 ixy0 = permute(ixy + iz0); vec4 ixy1 = permute(ixy + iz1);
-  vec4 gx0 = ixy0 * (1.0 / 7.0); vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-  gx0 = fract(gx0); vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-  vec4 sz0 = step(gz0, vec4(0.0)); gx0 -= sz0 * (step(0.0, gx0) - 0.5); gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-  vec4 gx1 = ixy1 * (1.0 / 7.0); vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-  gx1 = fract(gx1); vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-  vec4 sz1 = step(gz1, vec4(0.0)); gx1 -= sz1 * (step(0.0, gx1) - 0.5); gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x); vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z); vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x); vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z); vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-  vec4 norm0 = taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));
-  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;
-  vec4 norm1 = taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));
-  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;
-  float n000 = dot(g000, Pf0);
-  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-  float n111 = dot(g111, Pf1);
-  vec3 fade_xyz = fade(Pf0);
-  vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-  vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-  return 2.2 * n_xyz;
-}
-void main() {
-  vec2 uv = vUv;
-  vec2 mouse = uMouse;
-  float dist = distance(uv, mouse);
-  float ripple = uVelocity * exp(-dist * 8.0) * sin(dist * 20.0 - uTime * 3.0);
-  float noise = cnoise(vec3(uv * 3.0 + ripple * 0.3, uTime * 0.12));
-  float n2 = cnoise(vec3(uv * 6.0 - ripple * 0.2, uTime * 0.08 + 10.0));
-  float combined = noise * 0.6 + n2 * 0.4;
-  vec3 inkColor = vec3(0.031, 0.031, 0.031);
-  vec3 paperColor = vec3(0.941, 0.929, 0.902);
-  vec3 accentColor = vec3(0.784, 0.945, 0.208);
-  float t = smoothstep(-0.3, 0.3, combined);
-  vec3 base = mix(inkColor, paperColor, 0.04 + t * 0.05);
-  float accentMask = smoothstep(0.6, 0.8, combined) * uVelocity * 0.4;
-  vec3 color = mix(base, accentColor, accentMask);
-  gl_FragColor = vec4(color, 1.0);
-}
-`;
-
-type ShaderUniforms = {
-  [key: string]: { value: unknown };
-  uTime: { value: number };
-  uResolution: { value: THREE.Vector2 };
-  uMouse: { value: THREE.Vector2 };
-  uVelocity: { value: number };
-};
-
-function ShaderPlane({ mouseRef, velocityRef }: { mouseRef: React.MutableRefObject<THREE.Vector2>; velocityRef: React.MutableRefObject<number> }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const { size } = useThree();
-
-  const uniforms = useRef<ShaderUniforms>({
-    uTime: { value: 0 },
-    uResolution: { value: new THREE.Vector2(size.width, size.height) },
-    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-    uVelocity: { value: 0 },
-  });
-
-  useFrame((state) => {
-    uniforms.current.uTime.value = state.clock.elapsedTime;
-    (uniforms.current.uMouse.value as THREE.Vector2).lerp(mouseRef.current, 0.08);
-    uniforms.current.uVelocity.value = THREE.MathUtils.lerp(uniforms.current.uVelocity.value as number, velocityRef.current, 0.1);
-    velocityRef.current *= 0.92;
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <planeGeometry args={[2, 2]} />
-      <shaderMaterial
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms.current}
-      />
-    </mesh>
-  );
-}
-
-export function WebGLCanvas() {
-  const mouseRef = useRef(new THREE.Vector2(0.5, 0.5));
-  const velocityRef = useRef(0);
-  const lastMouseRef = useRef(new THREE.Vector2(0.5, 0.5));
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    const x = e.clientX / window.innerWidth;
-    const y = 1 - e.clientY / window.innerHeight;
-    const dx = x - lastMouseRef.current.x;
-    const dy = y - lastMouseRef.current.y;
-    velocityRef.current = Math.min(Math.sqrt(dx * dx + dy * dy) * 20, 1);
-    mouseRef.current.set(x, y);
-    lastMouseRef.current.set(x, y);
+import { useRef, useEffect } from 'react';
+const COLORS = ['#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#FF6B6B'];
+export default function WebGLCanvas() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let animId;
+    let t = 0;
+    const mouse = { x: 0, y: 0 };
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    const particles = Array.from({ length: 180 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2 + 0.5,
+      op: Math.random() * 0.5 + 0.15,
+      c: COLORS[Math.floor(Math.random() * COLORS.length)],
+      ph: Math.random() * Math.PI * 2,
+    }));
+    const onMM = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    window.addEventListener('mousemove', onMM);
+    window.addEventListener('resize', resize);
+    const draw = () => {
+      t += 0.005;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const g = ctx.createRadialGradient(canvas.width/2, canvas.height*0.35, 0, canvas.width/2, canvas.height*0.35, canvas.width*0.5);
+      g.addColorStop(0, 'rgba(139,92,246,0.07)');
+      g.addColorStop(0.6, 'rgba(236,72,153,0.03)');
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, i) => {
+        p.x += p.vx + Math.sin(t + p.ph) * 0.18;
+        p.y += p.vy + Math.cos(t * 0.7 + p.ph) * 0.12;
+        const dx = p.x - mouse.x; const dy = p.y - mouse.y;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        if (d < 80) { p.x += dx/d*1.2; p.y += dy/d*1.2; }
+        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+        particles.slice(i+1, i+5).forEach(p2 => {
+          const dd = Math.sqrt((p.x-p2.x)**2+(p.y-p2.y)**2);
+          if (dd < 110) { ctx.beginPath(); ctx.strokeStyle = p.c+'22'; ctx.lineWidth=0.5; ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
+        });
+        const sz = p.r + Math.sin(t*2+p.ph)*0.4;
+        ctx.beginPath(); ctx.arc(p.x,p.y,sz,0,Math.PI*2);
+        ctx.fillStyle = p.c + Math.floor(p.op*255).toString(16).padStart(2,'0');
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('mousemove', onMM); window.removeEventListener('resize', resize); };
   }, []);
-
-  const handleDeviceOrientation = useCallback((e: DeviceOrientationEvent) => {
-    if (e.gamma !== null && e.beta !== null) {
-      const x = (e.gamma + 90) / 180;
-      const y = (e.beta + 90) / 180;
-      mouseRef.current.set(Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y)));
-    }
-  }, []);
-
-  return (
-    <div
-      className="fixed inset-0 -z-10 pointer-events-none"
-      ref={(el) => {
-        if (el) {
-          window.addEventListener('mousemove', handleMouseMove, { passive: true });
-          window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-        }
-      }}
-    >
-      <Canvas
-        dpr={[1, 1.5]}
-        camera={{ position: [0, 0, 1], fov: 75 }}
-        gl={{ antialias: false, alpha: false }}
-      >
-        <ShaderPlane mouseRef={mouseRef} velocityRef={velocityRef} />
-      </Canvas>
-    </div>
-  );
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.7 }} />;
 }
