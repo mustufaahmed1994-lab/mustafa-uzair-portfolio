@@ -1,18 +1,27 @@
-'use client';
-import { useRef, useEffect } from 'react';
-const COLORS = ['#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#FF6B6B'];
+'use client'
+
+import { useRef, useEffect } from 'react'
+
+const COLORS = ['#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#FF6B6B']
+
 export default function WebGLCanvas() {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let animId;
-    let t = 0;
-    const mouse = { x: 0, y: 0 };
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    resize();
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    let animId: number
+    let t = 0
+    const mouse = { x: 0, y: 0 }
+
+    const resize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    resize()
+
     const particles = Array.from({ length: 180 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
@@ -22,40 +31,94 @@ export default function WebGLCanvas() {
       op: Math.random() * 0.5 + 0.15,
       c: COLORS[Math.floor(Math.random() * COLORS.length)],
       ph: Math.random() * Math.PI * 2,
-    }));
-    const onMM = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    window.addEventListener('mousemove', onMM);
-    window.addEventListener('resize', resize);
+    }))
+
+    const onMM = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY }
+    window.addEventListener('mousemove', onMM)
+    window.addEventListener('resize', resize)
+
     const draw = () => {
-      t += 0.005;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const g = ctx.createRadialGradient(canvas.width/2, canvas.height*0.35, 0, canvas.width/2, canvas.height*0.35, canvas.width*0.5);
-      g.addColorStop(0, 'rgba(139,92,246,0.07)');
-      g.addColorStop(0.6, 'rgba(236,72,153,0.03)');
-      g.addColorStop(1, 'transparent');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p, i) => {
-        p.x += p.vx + Math.sin(t + p.ph) * 0.18;
-        p.y += p.vy + Math.cos(t * 0.7 + p.ph) * 0.12;
-        const dx = p.x - mouse.x; const dy = p.y - mouse.y;
-        const d = Math.sqrt(dx*dx+dy*dy);
-        if (d < 80) { p.x += dx/d*1.2; p.y += dy/d*1.2; }
-        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
-        particles.slice(i+1, i+5).forEach(p2 => {
-          const dd = Math.sqrt((p.x-p2.x)**2+(p.y-p2.y)**2);
-          if (dd < 110) { ctx.beginPath(); ctx.strokeStyle = p.c+'22'; ctx.lineWidth=0.5; ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
-        });
-        const sz = p.r + Math.sin(t*2+p.ph)*0.4;
-        ctx.beginPath(); ctx.arc(p.x,p.y,sz,0,Math.PI*2);
-        ctx.fillStyle = p.c + Math.floor(p.op*255).toString(16).padStart(2,'0');
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('mousemove', onMM); window.removeEventListener('resize', resize); };
-  }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.7 }} />;
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      t += 0.008
+
+      // Ambient gradient orbs
+      const g1 = ctx.createRadialGradient(canvas.width * 0.7, canvas.height * 0.3, 0, canvas.width * 0.7, canvas.height * 0.3, canvas.width * 0.35)
+      g1.addColorStop(0, 'rgba(139,92,246,0.07)')
+      g1.addColorStop(1, 'transparent')
+      ctx.fillStyle = g1
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const g2 = ctx.createRadialGradient(canvas.width * 0.2, canvas.height * 0.7, 0, canvas.width * 0.2, canvas.height * 0.7, canvas.width * 0.25)
+      g2.addColorStop(0, 'rgba(236,72,153,0.05)')
+      g2.addColorStop(1, 'transparent')
+      ctx.fillStyle = g2
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Particles
+      particles.forEach((p) => {
+        // Mouse repulsion
+        const dx = mouse.x - p.x
+        const dy = mouse.y - p.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < 120) {
+          p.vx -= (dx / dist) * 0.02
+          p.vy -= (dy / dist) * 0.02
+        }
+        p.x += p.vx
+        p.y += p.vy
+        p.vx *= 0.99
+        p.vy *= 0.99
+        if (p.x < 0) p.x = canvas.width
+        if (p.x > canvas.width) p.x = 0
+        if (p.y < 0) p.y = canvas.height
+        if (p.y > canvas.height) p.y = 0
+
+        const pulse = Math.sin(t + p.ph) * 0.3 + 0.7
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2)
+        ctx.fillStyle = p.c + Math.floor(p.op * 255).toString(16).padStart(2, '0')
+        ctx.fill()
+      })
+
+      // Connect nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x
+          const dy = particles[i].y - particles[j].y
+          const d = Math.sqrt(dx * dx + dy * dy)
+          if (d < 100) {
+            ctx.beginPath()
+            ctx.moveTo(particles[i].x, particles[i].y)
+            ctx.lineTo(particles[j].x, particles[j].y)
+            ctx.strokeStyle = `rgba(139,92,246,${(1 - d / 100) * 0.08})`
+            ctx.lineWidth = 0.5
+            ctx.stroke()
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(draw)
+    }
+    draw()
+
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('mousemove', onMM)
+      window.removeEventListener('resize', resize)
+    }
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  )
 }
