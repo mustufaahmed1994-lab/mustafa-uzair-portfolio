@@ -3,248 +3,194 @@
 import { useRef, useEffect } from 'react'
 
 export default function WebGLCanvas() {
-    const canvasRef = useRef<HTMLCanvasElement>(null)
+      const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
+          const canvas = canvasRef.current
+          if (!canvas) return
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return
 
                 let animId: number
-        let t = 0
-        const mouse = { x: -9999, y: -9999, active: false }
+          let time = 0
+          const mouse = { x: -9999, y: -9999, px: -9999, py: -9999, active: false, vx: 0, vy: 0 }
 
                 const resize = () => {
-                        canvas.width = window.innerWidth
-                        canvas.height = window.innerHeight
+                          canvas.width = window.innerWidth
+                          canvas.height = window.innerHeight
                 }
-        resize()
+          resize()
 
-                // ---- Morphing geometry nodes ----
-                const NODE_COUNT = 80
-        interface Node {
-                x: number; y: number; ox: number; oy: number
-                vx: number; vy: number; r: number
-                hue: number; phase: number; speed: number
-        }
-        const nodes: Node[] = Array.from({ length: NODE_COUNT }, () => {
-                const ox = Math.random() * window.innerWidth
-                const oy = Math.random() * window.innerHeight
-                return {
-                          x: ox, y: oy, ox, oy,
-                          vx: 0, vy: 0,
-                          r: Math.random() * 2.5 + 0.5,
-                          hue: 260 + Math.random() * 80,
-                          phase: Math.random() * Math.PI * 2,
-                          speed: 0.3 + Math.random() * 0.7,
+                const BLOB_COUNT = 7
+          interface Blob { x: number; y: number; vx: number; vy: number; radius: number; hue: number; phase: number; speed: number }
+          const blobs: Blob[] = Array.from({ length: BLOB_COUNT }, (_, i) => ({
+                    x: window.innerWidth * (0.1 + 0.8 * Math.random()),
+                    y: window.innerHeight * (0.1 + 0.8 * Math.random()),
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    radius: window.innerWidth * (0.12 + 0.1 * Math.random()),
+                    hue: 250 + i * 18,
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.2 + Math.random() * 0.3,
+          }))
+
+                const PARTICLE_COUNT = 120
+          interface Particle { x: number; y: number; ox: number; oy: number; vx: number; vy: number; size: number; hue: number; phase: number; alpha: number; speed: number }
+          const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () => {
+                    const ox = Math.random() * window.innerWidth
+                    const oy = Math.random() * window.innerHeight
+                    return { x: ox, y: oy, ox, oy, vx: 0, vy: 0, size: 1 + Math.random() * 2, hue: 260 + Math.random() * 70, phase: Math.random() * Math.PI * 2, alpha: 0.3 + Math.random() * 0.5, speed: 0.15 + Math.random() * 0.35 }
+          })
+
+                interface Ripple { x: number; y: number; r: number; maxR: number; alpha: number; hue: number }
+          const ripples: Ripple[] = []
+                  let lastRipple = 0
+
+                interface Comet { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; hue: number; size: number }
+          const comets: Comet[] = []
+                  let lastComet = 0
+
+                const spawnComet = () => {
+                          const edge = Math.floor(Math.random() * 4)
+                          let x = 0, y = 0, vx = 0, vy = 0
+                          const spd = 1.5 + Math.random() * 2.5
+                          if (edge === 0) { x = Math.random() * canvas.width; y = -10; vx = (Math.random()-0.5)*0.8; vy = spd }
+                          else if (edge === 1) { x = canvas.width + 10; y = Math.random() * canvas.height; vx = -spd; vy = (Math.random()-0.5)*0.8 }
+                          else if (edge === 2) { x = Math.random() * canvas.width; y = canvas.height + 10; vx = (Math.random()-0.5)*0.8; vy = -spd }
+                          else { x = -10; y = Math.random() * canvas.height; vx = spd; vy = (Math.random()-0.5)*0.8 }
+                          comets.push({ x, y, vx, vy, life: 0, maxLife: 200 + Math.random() * 200, hue: 260 + Math.random() * 80, size: 1 + Math.random() * 1.5 })
                 }
-        })
 
-                // ---- Fluid wave lines ----
-                const WAVE_COUNT = 6
-        interface Wave {
-                amp: number; freq: number; speed: number; offset: number
-                hue: number; alpha: number; width: number
-        }
-        const waves: Wave[] = Array.from({ length: WAVE_COUNT }, (_, i) => ({
-                amp: 40 + i * 20,
-                freq: 0.003 + i * 0.0008,
-                speed: 0.4 + i * 0.15,
-                offset: (i / WAVE_COUNT) * Math.PI * 2,
-                hue: 260 + i * 20,
-                alpha: 0.04 - i * 0.004,
-                width: 1.5 - i * 0.15,
-        }))
-
-                // ---- Shooting particles ----
-                interface Spark { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; hue: number }
-        const sparks: Spark[] = []
-              const spawnSpark = (mx: number, my: number) => {
-                      for (let k = 0; k < 3; k++) {
-                                const angle = Math.random() * Math.PI * 2
-                                const speed = 1.5 + Math.random() * 3
-                                sparks.push({ x: mx, y: my, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, maxLife: 40 + Math.random() * 40, hue: 260 + Math.random() * 100 })
-                      }
-              }
-
-                // ---- Geometric rings ----
-                interface Ring { x: number; y: number; r: number; maxR: number; alpha: number; hue: number }
-        const rings: Ring[] = []
-              let lastRingTime = 0
-
-                const onMM = (e: MouseEvent) => {
-                        mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true
-                        if (Math.random() < 0.03) spawnSpark(mouse.x, mouse.y)
+                const onMove = (e: MouseEvent) => {
+                          mouse.vx = e.clientX - mouse.x; mouse.vy = e.clientY - mouse.y
+                          mouse.px = mouse.x; mouse.py = mouse.y
+                          mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true
+                          const now = Date.now()
+                          if (now - lastRipple > 400) {
+                                      ripples.push({ x: mouse.x, y: mouse.y, r: 0, maxR: 90 + Math.random() * 60, alpha: 0.6, hue: 260 + Math.random() * 80 })
+                                      lastRipple = now
+                          }
                 }
-        const onML = () => { mouse.active = false }
-        window.addEventListener('mousemove', onMM)
-        window.addEventListener('mouseleave', onML)
-        window.addEventListener('resize', resize)
+          const onLeave = () => { mouse.active = false; mouse.vx = 0; mouse.vy = 0 }
+          window.addEventListener('mousemove', onMove)
+          window.addEventListener('mouseleave', onLeave)
+          window.addEventListener('resize', resize)
+
+                const TAU = Math.PI * 2
 
                 const draw = () => {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height)
-                        t += 0.012
+                          const W = canvas.width, H = canvas.height
+                          time += 0.008
+                          ctx.globalAlpha = 0.18
+                          ctx.fillStyle = '#070710'
+                          ctx.fillRect(0, 0, W, H)
+                          ctx.globalAlpha = 1
 
-                        // ---- Animated background gradient ----
-                        const bx = canvas.width * (0.5 + 0.3 * Math.sin(t * 0.3))
-                        const by = canvas.height * (0.3 + 0.2 * Math.cos(t * 0.2))
-                        const bg = ctx.createRadialGradient(bx, by, 0, bx, by, canvas.width * 0.7)
-                        bg.addColorStop(0, `hsla(270,60%,12%,0.6)`)
-                        bg.addColorStop(0.5, `hsla(280,40%,8%,0.4)`)
-                        bg.addColorStop(1, 'transparent')
-                        ctx.fillStyle = bg
-                        ctx.fillRect(0, 0, canvas.width, canvas.height)
+                          const breathe = 0.5 + 0.5 * Math.sin(time * 0.7)
+                          const gcx = W * 0.5, gcy = H * 0.45
+                          const ambient = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, W * 0.55)
+                          ambient.addColorStop(0, `hsla(270,50%,10%,${0.06 + 0.04 * breathe})`)
+                          ambient.addColorStop(1, 'transparent')
+                          ctx.fillStyle = ambient
+                          ctx.fillRect(0, 0, W, H)
 
-                        // ---- Fluid waves ----
-                        waves.forEach((w) => {
-                                  ctx.beginPath()
-                                  for (let x = 0; x <= canvas.width; x += 4) {
-                                              const y = canvas.height * 0.5
-                                                + w.amp * Math.sin(x * w.freq + t * w.speed + w.offset)
-                                                + (w.amp * 0.5) * Math.sin(x * w.freq * 2.1 - t * w.speed * 0.7)
-                                              x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-                                  }
-                                  ctx.strokeStyle = `hsla(${w.hue},70%,65%,${w.alpha})`
-                                  ctx.lineWidth = w.width
-                                  ctx.stroke()
-                        })
+                          blobs.forEach((b) => {
+                                      b.x += b.vx + Math.sin(time * b.speed + b.phase) * 0.35
+                                      b.y += b.vy + Math.cos(time * b.speed * 0.8 + b.phase) * 0.35
+                                      if (b.x < -b.radius * 0.5) b.vx += 0.015
+                                      if (b.x > W + b.radius * 0.5) b.vx -= 0.015
+                                      if (b.y < -b.radius * 0.5) b.vy += 0.015
+                                      if (b.y > H + b.radius * 0.5) b.vy -= 0.015
+                                      b.vx *= 0.995; b.vy *= 0.995
+                                      if (mouse.active) {
+                                                    const dx = mouse.x - b.x, dy = mouse.y - b.y
+                                                    const dist = Math.sqrt(dx*dx + dy*dy)
+                                                    if (dist < 320 && dist > 1) { const f = (320 - dist) / 320 * 0.006; b.vx += dx / dist * f; b.vy += dy / dist * f }
+                                      }
+                                      const pulse = 1 + 0.06 * Math.sin(time * 2.5 + b.phase)
+                                      const r = b.radius * pulse
+                                      const alpha = 0.028 + 0.012 * breathe
+                                      const bg = ctx.createRadialGradient(b.x - r*0.3, b.y - r*0.3, 0, b.x, b.y, r)
+                                      bg.addColorStop(0, `hsla(${b.hue},70%,65%,${alpha * 1.6})`)
+                                      bg.addColorStop(0.5, `hsla(${b.hue},60%,50%,${alpha})`)
+                                      bg.addColorStop(1, `hsla(${b.hue},50%,40%,0)`)
+                                      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, TAU); ctx.fillStyle = bg; ctx.fill()
+                          })
 
-                        // ---- Update & draw nodes ----
-                        nodes.forEach((n) => {
-                                  // Organic drift
-                                              n.ox += Math.sin(t * n.speed + n.phase) * 0.3
-                                  n.oy += Math.cos(t * n.speed * 0.7 + n.phase) * 0.3
-                                  // Mouse gravity/repulsion
-                                              if (mouse.active) {
-                                                          const dx = mouse.x - n.x
-                                                          const dy = mouse.y - n.y
-                                                          const dist = Math.sqrt(dx * dx + dy * dy)
-                                                          if (dist < 180) {
-                                                                        const force = (180 - dist) / 180
-                                                                        n.vx -= (dx / dist) * force * 0.4
-                                                                        n.vy -= (dy / dist) * force * 0.4
-                                                          }
-                                              }
-                                  n.vx += (n.ox - n.x) * 0.01
-                                  n.vy += (n.oy - n.y) * 0.01
-                                  n.vx *= 0.94
-                                  n.vy *= 0.94
-                                  n.x += n.vx
-                                  n.y += n.vy
-                                  // Wrap
-                                              if (n.x < 0) n.x = canvas.width
-                                  if (n.x > canvas.width) n.x = 0
-                                  if (n.y < 0) n.y = canvas.height
-                                  if (n.y > canvas.height) n.y = 0
+                          particles.forEach((p) => {
+                                      p.ox += Math.sin(time * p.speed + p.phase) * 0.2
+                                      p.oy += Math.cos(time * p.speed * 0.9 + p.phase) * 0.2
+                                      if (mouse.active) {
+                                                    const dx = mouse.x - p.x, dy = mouse.y - p.y
+                                                    const d = Math.sqrt(dx*dx + dy*dy)
+                                                    if (d < 150 && d > 1) { const f = (150 - d) / 150 * 0.5; p.vx -= dx / d * f; p.vy -= dy / d * f }
+                                      }
+                                      p.vx += (p.ox - p.x) * 0.012; p.vy += (p.oy - p.y) * 0.012
+                                      p.vx *= 0.92; p.vy *= 0.92; p.x += p.vx; p.y += p.vy
+                                      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0
+                                      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0
+                                      const pulse = 0.5 + 0.5 * Math.sin(time * 3 + p.phase)
+                                      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 7)
+                                      glow.addColorStop(0, `hsla(${p.hue},80%,75%,${p.alpha * pulse})`); glow.addColorStop(1, 'transparent')
+                                      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 7, 0, TAU); ctx.fillStyle = glow; ctx.fill()
+                                      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * pulse), 0, TAU)
+                                      ctx.fillStyle = `hsla(${p.hue},85%,82%,${Math.min(p.alpha * pulse * 1.4, 0.9)})`; ctx.fill()
+                          })
 
-                                              const pulse = 0.6 + 0.4 * Math.sin(t * 2 + n.phase)
-                                  const alpha = 0.4 + 0.3 * pulse
-                                  // Glow
-                                              const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 8)
-                                  grd.addColorStop(0, `hsla(${n.hue},80%,70%,${alpha})`)
-                                  grd.addColorStop(1, 'transparent')
-                                  ctx.beginPath()
-                                  ctx.arc(n.x, n.y, n.r * 8, 0, Math.PI * 2)
-                                  ctx.fillStyle = grd
-                                  ctx.fill()
-                                  // Core dot
-                                              ctx.beginPath()
-                                  ctx.arc(n.x, n.y, n.r * pulse, 0, Math.PI * 2)
-                                  ctx.fillStyle = `hsla(${n.hue},90%,80%,${alpha + 0.3})`
-                                  ctx.fill()
-                        })
+                          ctx.save()
+                          for (let i = 0; i < particles.length; i++) {
+                                      for (let j = i + 1; j < particles.length; j++) {
+                                                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y
+                                                    const d = Math.sqrt(dx*dx + dy*dy)
+                                                    if (d < 110) {
+                                                                    const a = (1 - d/110) * 0.06
+                                                                    ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y)
+                                                                    ctx.strokeStyle = `hsla(${(particles[i].hue+particles[j].hue)/2},70%,70%,${a})`
+                                                                    ctx.lineWidth = (1 - d/110) * 0.8; ctx.stroke()
+                                                    }
+                                      }
+                          }
+                          ctx.restore()
 
-                        // ---- Draw connections ----
-                        for (let i = 0; i < nodes.length; i++) {
-                                  for (let j = i + 1; j < nodes.length; j++) {
-                                              const dx = nodes[i].x - nodes[j].x
-                                              const dy = nodes[i].y - nodes[j].y
-                                              const d = Math.sqrt(dx * dx + dy * dy)
-                                              if (d < 140) {
-                                                            const alpha = (1 - d / 140) * 0.15
-                                                            const hue = (nodes[i].hue + nodes[j].hue) / 2
-                                                            ctx.beginPath()
-                                                            ctx.moveTo(nodes[i].x, nodes[i].y)
-                                                            ctx.lineTo(nodes[j].x, nodes[j].y)
-                                                            ctx.strokeStyle = `hsla(${hue},70%,65%,${alpha})`
-                                                            ctx.lineWidth = (1 - d / 140) * 1.2
-                                                            ctx.stroke()
-                                              }
-                                  }
-                        }
+                          for (let i = ripples.length - 1; i >= 0; i--) {
+                                      const rp = ripples[i]; rp.r += 3; rp.alpha *= 0.965
+                                      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, TAU)
+                                      ctx.strokeStyle = `hsla(${rp.hue},70%,72%,${rp.alpha})`; ctx.lineWidth = 1.2; ctx.stroke()
+                                      if (rp.alpha < 0.008 || rp.r > rp.maxR) ripples.splice(i, 1)
+                          }
 
-                        // ---- Mouse trail rings ----
-                        const now = Date.now()
-                        if (mouse.active && now - lastRingTime > 600) {
-                                  rings.push({ x: mouse.x, y: mouse.y, r: 0, maxR: 80 + Math.random() * 60, alpha: 0.5, hue: 260 + Math.random() * 80 })
-                                  lastRingTime = now
-                        }
-                        for (let i = rings.length - 1; i >= 0; i--) {
-                                  const ring = rings[i]
-                                  ring.r += 2.5
-                                  ring.alpha *= 0.96
-                                  ctx.beginPath()
-                                  ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2)
-                                  ctx.strokeStyle = `hsla(${ring.hue},70%,70%,${ring.alpha})`
-                                  ctx.lineWidth = 1.5
-                                  ctx.stroke()
-                                  if (ring.alpha < 0.01 || ring.r > ring.maxR) rings.splice(i, 1)
-                        }
+                          const nowMs = Date.now()
+                          if (nowMs - lastComet > 2800 + Math.random() * 2000) { spawnComet(); lastComet = nowMs }
+                          for (let i = comets.length - 1; i >= 0; i--) {
+                                      const c = comets[i]; c.x += c.vx; c.y += c.vy; c.life++
+                                      const prog = c.life / c.maxLife
+                                      const alpha = Math.sin(prog * Math.PI) * 0.55
+                                      const tailLen = 28 + c.size * 8
+                                      const grd = ctx.createLinearGradient(c.x, c.y, c.x - c.vx * tailLen, c.y - c.vy * tailLen)
+                                      grd.addColorStop(0, `hsla(${c.hue},80%,78%,${alpha})`); grd.addColorStop(1, `hsla(${c.hue},70%,65%,0)`)
+                                      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x - c.vx * tailLen, c.y - c.vy * tailLen)
+                                      ctx.strokeStyle = grd; ctx.lineWidth = c.size * (1 - prog * 0.6); ctx.lineCap = 'round'; ctx.stroke()
+                                      ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 1.5 * (1 - prog * 0.5), 0, TAU)
+                                      ctx.fillStyle = `hsla(${c.hue},90%,88%,${alpha * 1.3})`; ctx.fill()
+                                      if (c.life >= c.maxLife) comets.splice(i, 1)
+                          }
 
-                        // ---- Sparks ----
-                        for (let i = sparks.length - 1; i >= 0; i--) {
-                                  const s = sparks[i]
-                                  s.x += s.vx; s.y += s.vy
-                                  s.vx *= 0.97; s.vy *= 0.97
-                                  s.life++
-                                  const prog = s.life / s.maxLife
-                                  const alpha = (1 - prog) * 0.7
-                                  ctx.beginPath()
-                                  ctx.arc(s.x, s.y, (1 - prog) * 2.5, 0, Math.PI * 2)
-                                  ctx.fillStyle = `hsla(${s.hue},90%,75%,${alpha})`
-                                  ctx.fill()
-                                  if (s.life >= s.maxLife) sparks.splice(i, 1)
-                        }
-
-                        // ---- Floating geometric accents ----
-                        for (let i = 0; i < 5; i++) {
-                                  const fx = canvas.width * 0.1 + (canvas.width * 0.8 * i / 4)
-                                  const fy = canvas.height * 0.5 + Math.sin(t * 0.5 + i * 1.2) * canvas.height * 0.15
-                                  const size = 20 + i * 8
-                                  const rot = t * 0.3 + i * 0.8
-                                  ctx.save()
-                                  ctx.translate(fx, fy)
-                                  ctx.rotate(rot)
-                                  ctx.strokeStyle = `hsla(${270 + i * 20},60%,65%,0.06)`
-                                  ctx.lineWidth = 1
-                                  ctx.strokeRect(-size / 2, -size / 2, size, size)
-                                  ctx.restore()
-                        }
-
-                        animId = requestAnimationFrame(draw)
+                          animId = requestAnimationFrame(draw)
                 }
-        draw()
+          draw()
 
                 return () => {
-                        cancelAnimationFrame(animId)
-                        window.removeEventListener('mousemove', onMM)
-                        window.removeEventListener('mouseleave', onML)
-                        window.removeEventListener('resize', resize)
+                          cancelAnimationFrame(animId)
+                          window.removeEventListener('mousemove', onMove)
+                          window.removeEventListener('mouseleave', onLeave)
+                          window.removeEventListener('resize', resize)
                 }
   }, [])
 
   return (
-        <canvas
-                ref={canvasRef}
-                style={{
-                          position: 'fixed',
-                          inset: 0,
-                          width: '100%',
-                          height: '100%',
-                          pointerEvents: 'none',
-                          zIndex: 0,
-                }}
-              />
-      )
+          <canvas
+                    ref={canvasRef}
+                    style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
+                  />
+        )
 }
