@@ -1,226 +1,86 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { useRef, useEffect, useState } from 'react';
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 const works = [
-  {
-    id: '01',
-    category: 'Enterprise Design Systems',
-    title: 'Bazaar Suite',
-    subtitle: 'Scaling Pakistan\'s Largest B2B Commerce Platform',
-    description: 'Led end-to-end design across 5 interconnected products — Easy Khata, Bazaar Pro, Shipper, Agent & Warehouse Ops — serving 300K+ retailers across Pakistan. Built a unified design system from scratch that reduced design-to-dev handoff by 60%.',
-    metrics: ['300K+ Retailers', '5 Products', '60% Faster Handoff', '2022–2024'],
-    tags: ['Design Systems', 'Fintech', 'B2B Commerce', 'Research'],
-    href: '/work/enterprise',
-    color: '#8B5CF6',
-    year: '2022–2024',
-  },
-  {
-    id: '02',
-    category: '0-to-1 Product Incubation',
-    title: 'Product Studio',
-    subtitle: 'Designing Consumer & Medical Apps from Concept to Launch',
-    description: 'Took 4 products from blank canvas to App Store launch: MemoryMag (memory preservation), EZMedrex (medical dispensing automation), BeachLyfe (coastal lifestyle), ActiveSOS (emergency response). Each shipped within 90-day sprint cycles.',
-    metrics: ['4 Apps Launched', 'iOS + Android', '90-Day Sprints', '2023–2025'],
-    tags: ['Product Design', 'Mobile', 'Healthcare', 'Consumer'],
-    href: '/work/products',
-    color: '#FF6B6B',
-    year: '2023–2025',
-  },
-  {
-    id: '03',
-    category: 'B2B SaaS & Creative Direction',
-    title: 'Locus & Growth Clients',
-    subtitle: 'Supply Chain Intelligence Meets Conversion Design',
-    description: 'Creative direction for Locus — a $50M+ Series B supply chain SaaS operating across 30+ countries. Designed high-conversion landing pages, product storytelling, and B2B growth assets that aligned complex logistics tech with enterprise buyer psychology.',
-    metrics: ['30+ Countries', '$50M+ Series B', 'Enterprise GTM', '2023–2024'],
-    tags: ['SaaS', 'Growth Design', 'Creative Direction', 'B2B'],
-    href: '/work/saas',
-    color: '#06B6D4',
-    year: '2023–2024',
-  },
-  {
-    id: '04',
-    category: 'Brand Identity & Visual Systems',
-    title: 'DARTE & Brand Projects',
-    subtitle: 'Identity Systems That Earn Instant Recognition',
-    description: 'Crafted full brand identities for startups and SMEs: logo systems, typography hierarchies, color theory application, brand guidelines, and go-to-market creative. Every identity built to scale across digital, print, and physical touchpoints.',
-    metrics: ['8+ Brands', 'Full Identity Systems', 'Print to Digital', '2021–2025'],
-    tags: ['Branding', 'Identity', 'Typography', 'Visual Design'],
-    href: '/work/brand',
-    color: '#F59E0B',
-    year: '2021–2025',
-  },
-];
+  { id: '01', category: 'Enterprise Design Systems', title: 'Bazaar Suite', subtitle: "Scaling Pakistan's Largest B2B Commerce Platform", description: 'Led end-to-end design across 5 products serving 300K+ retailers. Unified design system cut handoff time by 60%.', metrics: ['300K+ Retailers', '5 Products', '60% Faster'], href: '/work/enterprise', color: '#8B5CF6', year: '2022-2024', bg: 'grid' },
+  { id: '02', category: '0-to-1 Product Incubation', title: 'Product Studio', subtitle: 'Four Apps from Concept to App Store in 90-Day Sprints', description: 'Took 4 products from blank canvas to launch: MemoryMag, EZMedrex, BeachLyfe, ActiveSOS. Each shipped in 90 days.', metrics: ['4 Apps Launched', 'iOS + Android', '90-Day Sprints'], href: '/work/products', color: '#F97316', year: '2023-2025', bg: 'dots' },
+  { id: '03', category: 'B2B SaaS & Creative Direction', title: 'Locus & Growth Clients', subtitle: 'Supply Chain Intelligence Meets Conversion Design', description: "Creative direction for Locus - a $50M+ Series B SaaS across 30+ countries. Enterprise storytelling and growth assets.", metrics: ['30+ Countries', '$50M+ Series B', 'Enterprise GTM'], href: '/work/saas', color: '#06B6D4', year: '2023-2024', bg: 'lines' },
+  { id: '04', category: 'Brand Identity & Visual Systems', title: 'DARTE & Brand Projects', subtitle: 'Identity Systems That Earn Instant Recognition', description: 'Full brand identities for startups: logos, typography, color, guidelines. Built to scale across all touchpoints.', metrics: ['8+ Brands', 'Full Identity Systems', 'Print to Digital'], href: '/work/brand', color: '#F59E0B', year: '2021-2025', bg: 'radial' },
+]
+
+function getBg(bg: string, c: string) {
+  if (bg === 'grid') return { backgroundImage: 'linear-gradient(' + c + '20 1px, transparent 1px), linear-gradient(90deg, ' + c + '20 1px, transparent 1px), radial-gradient(ellipse at 70% 40%, ' + c + '22 0%, transparent 55%)', backgroundSize: '32px 32px, 32px 32px, 100% 100%' }
+  if (bg === 'dots') return { backgroundImage: 'radial-gradient(circle, ' + c + '45 1.5px, transparent 1.5px), radial-gradient(ellipse at 30% 60%, ' + c + '18 0%, transparent 50%)', backgroundSize: '24px 24px, 100% 100%' }
+  if (bg === 'lines') return { backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 12px, ' + c + '16 12px, ' + c + '16 13px), radial-gradient(ellipse at 60% 30%, ' + c + '20 0%, transparent 55%)' }
+  return { backgroundImage: 'radial-gradient(circle at 50% 50%, ' + c + '28 0%, ' + c + '06 40%, transparent 65%)' }
+}
 
 export default function WorkIndex() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [active, setActive] = useState(null)
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
-    );
-
-    const cards = sectionRef.current?.querySelectorAll('.work-card');
-    cards?.forEach((card) => observer.observe(card));
-
-    return () => observer.disconnect();
-  }, []);
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('wi-vis') }),
+      { threshold: 0.08 }
+    )
+    document.querySelectorAll('.wi-card').forEach((c) => obs.observe(c))
+    return () => obs.disconnect()
+  }, [])
 
   return (
-    <section ref={sectionRef} id="work" className="relative py-32 px-6 md:px-12 overflow-hidden">
-      <div className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(139,92,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.3) 1px, transparent 1px)',
-          backgroundSize: '60px 60px'
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-20 scroll-reveal work-card">
+    <section id="work" style={{ padding: 'clamp(60px,10vh,120px) clamp(24px,6vw,96px)', background: 'var(--color-ink)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div className="wi-card" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 'clamp(40px,7vh,72px)', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <span className="text-xs font-mono tracking-[0.3em] text-violet-400 uppercase mb-4 block">
-              ◈ Selected Work
-            </span>
-            <h2 className="font-display text-5xl md:text-7xl font-bold text-cream leading-none">
-              Work that
-              <br />
-              <em className="text-violet-400 not-italic">moves</em> markets.
-            </h2>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: '#8B5CF6', marginBottom: 12 }}>Selected Work</p>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.5rem,6vw,5.5rem)', fontWeight: 400, color: 'var(--color-paper)', lineHeight: 0.95, letterSpacing: '-0.03em', margin: 0 }}>Work that moves markets.</h2>
           </div>
-          <div className="hidden md:block text-right">
-            <p className="text-muted text-sm font-mono">
-              2021 — 2025
-              <br />
-              4 disciplines
-            </p>
-          </div>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: 'var(--color-muted)', letterSpacing: '0.1em', lineHeight: 1.8 }}>2021 - 2025 / 4 disciplines</p>
         </div>
-
-        <div className="space-y-1">
-          {works.map((work, index) => (
-            <Link
-              key={work.id}
-              href={work.href}
-              className="work-card scroll-reveal group block"
-              style={{ transitionDelay: index * 80 + 'ms' }}
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              <div
-                className="relative border border-white/5 rounded-2xl p-8 md:p-10 overflow-hidden transition-all duration-500"
-                style={{
-                  background: activeIndex === index
-                    ? work.color + '10'
-                    : 'rgba(22, 22, 30, 0.4)',
-                  borderColor: activeIndex === index ? work.color + '30' : 'rgba(255,255,255,0.05)',
-                  boxShadow: activeIndex === index ? '0 20px 60px ' + work.color + '15' : 'none',
-                }}
-              >
-                <div
-                  className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl transition-opacity duration-500 pointer-events-none"
-                  style={{
-                    background: work.color,
-                    opacity: activeIndex === index ? 0.08 : 0,
-                  }}
-                />
-
-                <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
-                  <div className="flex-shrink-0 w-full md:w-48">
-                    <span
-                      className="text-6xl md:text-8xl font-display font-bold leading-none transition-colors duration-300"
-                      style={{ color: activeIndex === index ? work.color : 'rgba(255,255,255,0.06)' }}
-                    >
-                      {work.id}
-                    </span>
-                    <p className="text-xs font-mono tracking-widest uppercase mt-2 transition-colors duration-300"
-                      style={{ color: activeIndex === index ? work.color : '#5C5875' }}>
-                      {work.category}
-                    </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'clamp(12px,1.5vw,20px)' }}>
+          {works.map((w, i) => (
+            <Link key={w.id} href={w.href} className="wi-card" style={{ textDecoration: 'none', display: 'block', transitionDelay: i * 80 + 'ms' }} onMouseEnter={() => setActive(i as any)} onMouseLeave={() => setActive(null)}>
+              <div style={{ border: '1px solid ' + (active === i ? w.color + '45' : 'rgba(255,255,255,0.06)'), borderRadius: 4, overflow: 'hidden', background: active === i ? w.color + '09' : 'rgba(14,14,20,0.6)', transition: 'all 0.4s ease', boxShadow: active === i ? '0 24px 64px ' + w.color + '18' : 'none' }}>
+                <div style={{ height: 'clamp(140px,18vw,220px)', position: 'relative', overflow: 'hidden', background: 'rgba(8,8,14,0.8)', ...getBg(w.bg, w.color) }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, ' + w.color + '12 0%, transparent 60%)' }} />
+                  <div style={{ position: 'absolute', top: 'clamp(16px,3vw,28px)', left: 'clamp(16px,3vw,28px)' }}>
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,5vw,5.5rem)', fontWeight: 400, color: w.color, opacity: active === i ? 0.9 : 0.3, transition: 'opacity 0.4s', lineHeight: 1 }}>{w.id}</span>
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl md:text-3xl font-display font-bold text-cream mb-2 group-hover:text-white transition-colors duration-300">
-                      {work.title}
-                    </h3>
-                    <p className="text-secondary text-base mb-4 font-medium">
-                      {work.subtitle}
-                    </p>
-                    <p className="text-muted text-sm leading-relaxed max-w-2xl">
-                      {work.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mt-5">
-                      {work.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs font-mono px-3 py-1 rounded-full border transition-all duration-300"
-                          style={{
-                            borderColor: activeIndex === index ? work.color + '40' : 'rgba(255,255,255,0.08)',
-                            color: activeIndex === index ? work.color : '#5C5875',
-                            background: activeIndex === index ? work.color + '10' : 'transparent',
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                  <div style={{ position: 'absolute', top: 'clamp(16px,3vw,28px)', right: 'clamp(16px,3vw,28px)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.58rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: w.color, opacity: 0.6 }}>{w.year}</span>
                   </div>
-
-                  <div className="hidden lg:flex flex-col gap-3 flex-shrink-0 w-48">
-                    {work.metrics.map((metric) => (
-                      <div key={metric} className="text-right">
-                        <span className="text-xs font-mono text-muted group-hover:text-secondary transition-colors duration-300">
-                          {metric}
-                        </span>
-                      </div>
+                  <div style={{ position: 'absolute', bottom: 'clamp(12px,2vw,20px)', right: 'clamp(12px,2vw,20px)', width: 34, height: 34, border: '1px solid ' + w.color + '50', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: active === i ? w.color + '20' : 'transparent', transition: 'all 0.4s', transform: active === i ? 'rotate(-45deg)' : 'rotate(0)' }}>
+                    <span style={{ color: w.color, fontSize: 14 }}>{'>'}</span>
+                  </div>
+                </div>
+                <div style={{ padding: 'clamp(16px,2.5vw,28px)' }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.58rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: w.color, margin: '0 0 8px' }}>{w.category}</p>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.2rem,2vw,1.75rem)', fontWeight: 400, color: 'var(--color-paper)', margin: '0 0 6px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{w.title}</h3>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.72rem,1.1vw,0.82rem)', color: 'var(--color-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>{w.subtitle}</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.68rem,0.95vw,0.77rem)', color: 'rgba(255,255,255,0.38)', lineHeight: 1.65, margin: '0 0 14px' }}>{w.description}</p>
+                  <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                    {w.metrics.map((m) => (
+                      <span key={m} style={{ fontFamily: 'var(--font-sans)', fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 9px', border: '1px solid ' + w.color + '28', color: w.color, opacity: 0.8, borderRadius: 2 }}>{m}</span>
                     ))}
-                  </div>
-
-                  <div className="flex-shrink-0">
-                    <div
-                      className="w-12 h-12 rounded-full border flex items-center justify-center transition-all duration-500"
-                      style={{
-                        borderColor: activeIndex === index ? work.color + '60' : 'rgba(255,255,255,0.08)',
-                        background: activeIndex === index ? work.color + '15' : 'transparent',
-                        transform: activeIndex === index ? 'rotate(-45deg)' : 'rotate(0deg)',
-                      }}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"
-                        style={{ color: activeIndex === index ? work.color : '#5C5875' }}
-                      >
-                        <path d="M3 9h12M9 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
                   </div>
                 </div>
               </div>
             </Link>
           ))}
         </div>
-
-        <div className="mt-20 text-center scroll-reveal work-card">
-          <p className="text-muted font-mono text-sm mb-6 tracking-wide">
-            Every project. Every decision. Documented.
-          </p>
-          <Link
-            href="/work/enterprise"
-            className="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-violet-500/30 text-violet-400 hover:bg-violet-500/10 transition-all duration-300 font-mono text-sm tracking-wide group"
-          >
+        <div className="wi-card" style={{ marginTop: 'clamp(40px,6vh,64px)', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.62rem', color: 'var(--color-muted)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 18 }}>Every project. Every decision. Documented.</p>
+          <Link href="/work/enterprise" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '13px 28px', border: '1px solid rgba(139,92,246,0.3)', color: '#8B5CF6', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.15em', textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
             Explore all case studies
-            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
           </Link>
         </div>
       </div>
+      <style>{`
+        .wi-card { opacity: 0; transform: translateY(22px); transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+        .wi-vis { opacity: 1 !important; transform: translateY(0) !important; }
+      `}</style>
     </section>
-  );
+  )
 }
