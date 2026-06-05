@@ -31,12 +31,11 @@
   --gradient-hero:   linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F59E0B 100%);
   --gradient-violet: linear-gradient(135deg, #8B5CF6, #6D28D9);
 
-  /* ── Font tokens — exactly two ────────────────────────── */
-  --font-display: var(--font-display);   /* Syne  — injected by next/font */
-  --font-body:    var(--font-body);      /* Inter — injected by next/font */
-  /* legacy alias used in older component files */
-  --font-sans:    var(--font-display);
-  --font-serif:   var(--font-display);
+  /* ── Font tokens ───────────────────────────────────────
+     --font-display and --font-body are injected by next/font onto <html>.
+     --font-sans and --font-serif are legacy aliases → both point to display.  */
+  --font-sans:  var(--font-display);
+  --font-serif: var(--font-display);
 
   --radius-sm: 8px;
   --radius-md: 16px;
