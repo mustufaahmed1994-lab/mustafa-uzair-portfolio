@@ -1,4 +1,4 @@
-—'use client'
+'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -76,16 +76,16 @@ export default function Hero() {
           <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, #8B5CF6, transparent)' }} />
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#A78BFA' }}>Design x Strategy x Growth</span>
         </div>
-        <div style={{ overflow: 'hidden', marginBottom: 4 }}>
+        <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
           <span ref={lineRef1} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>Turning</span>
         </div>
-        <div style={{ overflow: 'hidden', marginBottom: 4 }}>
+        <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
           <span ref={lineRef2} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.02em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>design</span>
         </div>
-        <div style={{ overflow: 'hidden', marginBottom: 4 }}>
+        <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
           <span ref={lineRef3} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>into</span>
         </div>
-        <div style={{ overflow: 'hidden', marginBottom: 'clamp(20px,3vh,36px)' }}>
+        <div style={{ paddingTop: '0.1em', paddingBottom: '0.1em', marginBottom: 'clamp(20px,3vh,36px)' }}>
           <span ref={lineRef4} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 'clamp(1.6rem,4vw,4.5rem)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.025em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>commercial outcomes.</span>
         </div>
         <div className="h-reveal" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'clamp(16px,2.5vh,28px)' }}>
@@ -109,9 +109,9 @@ export default function Hero() {
           ))}
         </div>
       </div>
-      <div className="h-reveal" style={{ position: 'absolute', bottom: 32, left: 'clamp(24px,6vw,96px)', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 1, height: 36, background: 'linear-gradient(to bottom, transparent, #8B5CF6)' }} />
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-muted)', writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}>Scroll</span>
+      <div className="h-reveal" style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.6rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--color-muted)' }}>Scroll</span>
+        <div style={{ width: 1, height: 48, background: 'linear-gradient(to bottom, #8B5CF6, transparent)', animation: 'scrollPulse 2s ease-in-out infinite' }} />
       </div>
       <style>{`
         .h-reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
@@ -124,6 +124,7 @@ export default function Hero() {
         @keyframes cardFloat2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
         @keyframes cardFloat3 { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
         @keyframes barGrow { 0%,100%{transform:scaleX(0.6)} 50%{transform:scaleX(1)} }
+        @keyframes scrollPulse { 0%,100%{opacity:1;transform:scaleY(1)} 50%{opacity:0.4;transform:scaleY(0.7)} }
       `}</style>
     </section>
   )
