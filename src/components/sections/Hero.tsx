@@ -77,22 +77,22 @@ export default function Hero() {
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#A78BFA' }}>Design x Strategy x Growth</span>
         </div>
         <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
-          <span ref={lineRef1} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>Turning</span>
+          <span ref={lineRef1} style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 700, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>Turning</span>
         </div>
         <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
-          <span ref={lineRef2} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.02em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>design</span>
+          <span ref={lineRef2} style={{ display: 'block', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.02em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>design</span>
         </div>
         <div style={{ paddingTop: '0.15em', paddingBottom: '0.15em', marginBottom: 4 }}>
-          <span ref={lineRef3} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>into</span>
+          <span ref={lineRef3} style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem,6.5vw,7.5rem)', fontWeight: 700, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--color-paper)', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>into</span>
         </div>
         <div style={{ paddingTop: '0.1em', paddingBottom: '0.1em', marginBottom: 'clamp(20px,3vh,36px)' }}>
-          <span ref={lineRef4} style={{ display: 'block', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 'clamp(1.6rem,4vw,4.5rem)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.025em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>commercial outcomes.</span>
+          <span ref={lineRef4} style={{ display: 'block', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(1.6rem,4vw,4.5rem)', fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.025em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>commercial outcomes.</span>
         </div>
         <div className="h-reveal" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'clamp(16px,2.5vh,28px)' }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '1rem', color: 'var(--color-muted)' }}>Currently:</span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '1rem', fontWeight: 600, color: 'var(--color-paper)', minWidth: 200 }}>{displayed}<span className="typed-cursor" /></span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', color: 'var(--color-muted)' }}>Currently:</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.95rem', fontFamily: 'var(--font-body)', fontWeight: 600, color: 'var(--color-paper)', minWidth: 200 }}>{displayed}<span className="typed-cursor" /></span>
         </div>
-        <p className="h-reveal" style={{ maxWidth: 540, marginBottom: 'clamp(24px,4vh,44px)', fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.9rem,1.1vw,1.05rem)', lineHeight: 1.8, color: 'var(--color-muted)' }}>
+        <p className="h-reveal" style={{ maxWidth: 540, marginBottom: 'clamp(24px,4vh,44px)', fontFamily: 'var(--font-body)', fontSize: 'clamp(0.9rem,1.1vw,1.05rem)', lineHeight: 1.8, color: 'var(--color-muted)' }}>
           Eight years architecting visual systems that drive commercial results. Founding team at{' '}
           <span style={{ color: 'var(--color-paper)', fontWeight: 500 }}>Bazaar Technologies</span> scaled to{' '}
           <span style={{ color: '#A78BFA', fontWeight: 600 }}>$100M+ institutional funding</span>, 2.4M businesses digitized.
