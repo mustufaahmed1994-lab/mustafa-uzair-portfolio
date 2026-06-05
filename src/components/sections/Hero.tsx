@@ -89,8 +89,8 @@ export default function Hero() {
           <span ref={lineRef4} style={{ display: 'block', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'clamp(1.6rem,4vw,4.5rem)', fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.025em', color: '#A78BFA', opacity: 0, transform: 'translateY(100%) skewY(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1)' }}>commercial outcomes.</span>
         </div>
         <div className="h-reveal" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'clamp(16px,2.5vh,28px)' }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', color: 'var(--color-muted)' }}>Currently:</span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.95rem', fontFamily: 'var(--font-body)', fontWeight: 600, color: 'var(--color-paper)', minWidth: 200 }}>{displayed}<span className="typed-cursor" /></span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-muted)' }}>Currently:</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-paper)', minWidth: 200 }}>{displayed}<span className="typed-cursor" /></span>
         </div>
         <p className="h-reveal" style={{ maxWidth: 540, marginBottom: 'clamp(24px,4vh,44px)', fontFamily: 'var(--font-body)', fontSize: 'clamp(0.9rem,1.1vw,1.05rem)', lineHeight: 1.8, color: 'var(--color-muted)' }}>
           Eight years architecting visual systems that drive commercial results. Founding team at{' '}
