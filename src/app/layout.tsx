@@ -1,9 +1,8 @@
-—import type { Metadata } from 'next'
+import type { Metadata } from 'next'
 import { Inter, Syne } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/ui/Nav'
 
-// Display / heading font — geometric sans with editorial character
 const syne = Syne({
   subsets: ['latin'],
   variable: '--font-display',
@@ -11,7 +10,6 @@ const syne = Syne({
   weight: ['400', '500', '600', '700', '800'],
 })
 
-// UI / body font — neutral, legible, trusted
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
