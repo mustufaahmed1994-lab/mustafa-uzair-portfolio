@@ -2,195 +2,207 @@
 
 import { useRef, useEffect } from 'react'
 
+/*
+  AURORA MESH — a fluid magnetic-field topology animation.
+  Technique: layered sine-distorted contour lines + chromatic aurora bands
+  + mouse-driven gravitational warp lens. Zero particles.
+  Senior motion design principle: restraint + depth over busyness.
+*/
+
 export default function WebGLCanvas() {
-      const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-          const canvas = canvasRef.current
-          if (!canvas) return
-          const ctx = canvas.getContext('2d')
-          if (!ctx) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-                let animId: number
-          let time = 0
-          const mouse = { x: -9999, y: -9999, px: -9999, py: -9999, active: false, vx: 0, vy: 0 }
+    let animId: number
+    let t = 0
 
-                const resize = () => {
-                          canvas.width = window.innerWidth
-                          canvas.height = window.innerHeight
-                }
-          resize()
+    // Mouse — smoothed via lerp for silky warp response
+    const mouse = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, active: false }
 
-                const BLOB_COUNT = 7
-          interface Blob { x: number; y: number; vx: number; vy: number; radius: number; hue: number; phase: number; speed: number }
-          const blobs: Blob[] = Array.from({ length: BLOB_COUNT }, (_, i) => ({
-                    x: window.innerWidth * (0.1 + 0.8 * Math.random()),
-                    y: window.innerHeight * (0.1 + 0.8 * Math.random()),
-                    vx: (Math.random() - 0.5) * 0.4,
-                    vy: (Math.random() - 0.5) * 0.4,
-                    radius: window.innerWidth * (0.12 + 0.1 * Math.random()),
-                    hue: 250 + i * 18,
-                    phase: Math.random() * Math.PI * 2,
-                    speed: 0.2 + Math.random() * 0.3,
-          }))
+    const resize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    resize()
 
-                const PARTICLE_COUNT = 120
-          interface Particle { x: number; y: number; ox: number; oy: number; vx: number; vy: number; size: number; hue: number; phase: number; alpha: number; speed: number }
-          const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () => {
-                    const ox = Math.random() * window.innerWidth
-                    const oy = Math.random() * window.innerHeight
-                    return { x: ox, y: oy, ox, oy, vx: 0, vy: 0, size: 1 + Math.random() * 2, hue: 260 + Math.random() * 70, phase: Math.random() * Math.PI * 2, alpha: 0.3 + Math.random() * 0.5, speed: 0.15 + Math.random() * 0.35 }
-          })
+    const onMove = (e: MouseEvent) => {
+      mouse.tx = e.clientX / window.innerWidth
+      mouse.ty = e.clientY / window.innerHeight
+      mouse.active = true
+    }
+    const onLeave = () => { mouse.active = false }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseleave', onLeave)
+    window.addEventListener('resize', resize)
 
-                interface Ripple { x: number; y: number; r: number; maxR: number; alpha: number; hue: number }
-          const ripples: Ripple[] = []
-                  let lastRipple = 0
+    // Smooth noise helper — layered sines, no random jitter
+    const sn = (x: number, y: number, z: number) =>
+      Math.sin(x * 1.4 + z) * Math.cos(y * 0.9 - z * 0.7) * 0.5 +
+      Math.sin(x * 0.6 - z * 1.3) * Math.cos(y * 1.7 + z * 0.4) * 0.3 +
+      Math.sin(x * 2.1 + y * 0.8 + z * 0.6) * 0.2
 
-                interface Comet { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; hue: number; size: number }
-          const comets: Comet[] = []
-                  let lastComet = 0
+    const TAU = Math.PI * 2
 
-                const spawnComet = () => {
-                          const edge = Math.floor(Math.random() * 4)
-                          let x = 0, y = 0, vx = 0, vy = 0
-                          const spd = 1.5 + Math.random() * 2.5
-                          if (edge === 0) { x = Math.random() * canvas.width; y = -10; vx = (Math.random()-0.5)*0.8; vy = spd }
-                          else if (edge === 1) { x = canvas.width + 10; y = Math.random() * canvas.height; vx = -spd; vy = (Math.random()-0.5)*0.8 }
-                          else if (edge === 2) { x = Math.random() * canvas.width; y = canvas.height + 10; vx = (Math.random()-0.5)*0.8; vy = -spd }
-                          else { x = -10; y = Math.random() * canvas.height; vx = spd; vy = (Math.random()-0.5)*0.8 }
-                          comets.push({ x, y, vx, vy, life: 0, maxLife: 200 + Math.random() * 200, hue: 260 + Math.random() * 80, size: 1 + Math.random() * 1.5 })
-                }
+    // Aurora band config — 3 overlapping chromatic layers
+    const BANDS = [
+      { hue: 262, sat: 65, baseAlpha: 0.09, yOff: 0.0,  freq: 1.0, amp: 0.18, speed: 0.38 },
+      { hue: 280, sat: 55, baseAlpha: 0.07, yOff: 0.08, freq: 0.7, amp: 0.24, speed: 0.26 },
+      { hue: 310, sat: 50, baseAlpha: 0.05, yOff: 0.15, freq: 1.3, amp: 0.14, speed: 0.52 },
+    ]
 
-                const onMove = (e: MouseEvent) => {
-                          mouse.vx = e.clientX - mouse.x; mouse.vy = e.clientY - mouse.y
-                          mouse.px = mouse.x; mouse.py = mouse.y
-                          mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true
-                          const now = Date.now()
-                          if (now - lastRipple > 400) {
-                                      ripples.push({ x: mouse.x, y: mouse.y, r: 0, maxR: 90 + Math.random() * 60, alpha: 0.6, hue: 260 + Math.random() * 80 })
-                                      lastRipple = now
-                          }
-                }
-          const onLeave = () => { mouse.active = false; mouse.vx = 0; mouse.vy = 0 }
-          window.addEventListener('mousemove', onMove)
-          window.addEventListener('mouseleave', onLeave)
-          window.addEventListener('resize', resize)
+    // Contour line config
+    const LINE_COUNT = 28       // number of topology lines
+    const LINE_SEGS  = 120      // horizontal resolution per line
+    const WARP_RADIUS = 0.38    // mouse influence radius (normalised)
+    const WARP_STRENGTH = 0.22  // how much cursor bends the lines
 
-                const TAU = Math.PI * 2
+    const draw = () => {
+      const W = canvas.width
+      const H = canvas.height
+      t += 0.0055
 
-                const draw = () => {
-                          const W = canvas.width, H = canvas.height
-                          time += 0.008
-                          ctx.globalAlpha = 0.18
-                          ctx.fillStyle = '#070710'
-                          ctx.fillRect(0, 0, W, H)
-                          ctx.globalAlpha = 1
+      // Smooth mouse lerp
+      const lerpS = mouse.active ? 0.055 : 0.02
+      mouse.x += (mouse.tx - mouse.x) * lerpS
+      mouse.y += (mouse.ty - mouse.y) * lerpS
 
-                          const breathe = 0.5 + 0.5 * Math.sin(time * 0.7)
-                          const gcx = W * 0.5, gcy = H * 0.45
-                          const ambient = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, W * 0.55)
-                          ambient.addColorStop(0, `hsla(270,50%,10%,${0.06 + 0.04 * breathe})`)
-                          ambient.addColorStop(1, 'transparent')
-                          ctx.fillStyle = ambient
-                          ctx.fillRect(0, 0, W, H)
+      // ── Background fade (motion blur effect)
+      ctx.globalAlpha = 0.14
+      ctx.fillStyle = '#06060f'
+      ctx.fillRect(0, 0, W, H)
+      ctx.globalAlpha = 1
 
-                          blobs.forEach((b) => {
-                                      b.x += b.vx + Math.sin(time * b.speed + b.phase) * 0.35
-                                      b.y += b.vy + Math.cos(time * b.speed * 0.8 + b.phase) * 0.35
-                                      if (b.x < -b.radius * 0.5) b.vx += 0.015
-                                      if (b.x > W + b.radius * 0.5) b.vx -= 0.015
-                                      if (b.y < -b.radius * 0.5) b.vy += 0.015
-                                      if (b.y > H + b.radius * 0.5) b.vy -= 0.015
-                                      b.vx *= 0.995; b.vy *= 0.995
-                                      if (mouse.active) {
-                                                    const dx = mouse.x - b.x, dy = mouse.y - b.y
-                                                    const dist = Math.sqrt(dx*dx + dy*dy)
-                                                    if (dist < 320 && dist > 1) { const f = (320 - dist) / 320 * 0.006; b.vx += dx / dist * f; b.vy += dy / dist * f }
-                                      }
-                                      const pulse = 1 + 0.06 * Math.sin(time * 2.5 + b.phase)
-                                      const r = b.radius * pulse
-                                      const alpha = 0.028 + 0.012 * breathe
-                                      const bg = ctx.createRadialGradient(b.x - r*0.3, b.y - r*0.3, 0, b.x, b.y, r)
-                                      bg.addColorStop(0, `hsla(${b.hue},70%,65%,${alpha * 1.6})`)
-                                      bg.addColorStop(0.5, `hsla(${b.hue},60%,50%,${alpha})`)
-                                      bg.addColorStop(1, `hsla(${b.hue},50%,40%,0)`)
-                                      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, TAU); ctx.fillStyle = bg; ctx.fill()
-                          })
+      const mx = mouse.x   // 0–1
+      const my = mouse.y   // 0–1
 
-                          particles.forEach((p) => {
-                                      p.ox += Math.sin(time * p.speed + p.phase) * 0.2
-                                      p.oy += Math.cos(time * p.speed * 0.9 + p.phase) * 0.2
-                                      if (mouse.active) {
-                                                    const dx = mouse.x - p.x, dy = mouse.y - p.y
-                                                    const d = Math.sqrt(dx*dx + dy*dy)
-                                                    if (d < 150 && d > 1) { const f = (150 - d) / 150 * 0.5; p.vx -= dx / d * f; p.vy -= dy / d * f }
-                                      }
-                                      p.vx += (p.ox - p.x) * 0.012; p.vy += (p.oy - p.y) * 0.012
-                                      p.vx *= 0.92; p.vy *= 0.92; p.x += p.vx; p.y += p.vy
-                                      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0
-                                      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0
-                                      const pulse = 0.5 + 0.5 * Math.sin(time * 3 + p.phase)
-                                      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 7)
-                                      glow.addColorStop(0, `hsla(${p.hue},80%,75%,${p.alpha * pulse})`); glow.addColorStop(1, 'transparent')
-                                      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 7, 0, TAU); ctx.fillStyle = glow; ctx.fill()
-                                      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * pulse), 0, TAU)
-                                      ctx.fillStyle = `hsla(${p.hue},85%,82%,${Math.min(p.alpha * pulse * 1.4, 0.9)})`; ctx.fill()
-                          })
+      // ── 1. Aurora bands — slow morphing gradient washes
+      BANDS.forEach((b, bi) => {
+        const breathe = 0.5 + 0.5 * Math.sin(t * 0.6 + bi * 2.1)
+        // Band centroid Y drifts gently
+        const cy = (b.yOff + 0.35 + 0.15 * Math.sin(t * b.speed + bi)) * H
+        const rH = H * (0.32 + 0.12 * breathe)
 
-                          ctx.save()
-                          for (let i = 0; i < particles.length; i++) {
-                                      for (let j = i + 1; j < particles.length; j++) {
-                                                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y
-                                                    const d = Math.sqrt(dx*dx + dy*dy)
-                                                    if (d < 110) {
-                                                                    const a = (1 - d/110) * 0.06
-                                                                    ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y)
-                                                                    ctx.strokeStyle = `hsla(${(particles[i].hue+particles[j].hue)/2},70%,70%,${a})`
-                                                                    ctx.lineWidth = (1 - d/110) * 0.8; ctx.stroke()
-                                                    }
-                                      }
-                          }
-                          ctx.restore()
+        // Mouse proximity lifts the band's brightness
+        const mdist = Math.hypot(mx - 0.5, my - (cy / H))
+        const mouseLift = mouse.active ? Math.max(0, 1 - mdist / 0.6) * 0.04 : 0
 
-                          for (let i = ripples.length - 1; i >= 0; i--) {
-                                      const rp = ripples[i]; rp.r += 3; rp.alpha *= 0.965
-                                      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, TAU)
-                                      ctx.strokeStyle = `hsla(${rp.hue},70%,72%,${rp.alpha})`; ctx.lineWidth = 1.2; ctx.stroke()
-                                      if (rp.alpha < 0.008 || rp.r > rp.maxR) ripples.splice(i, 1)
-                          }
+        const alpha = b.baseAlpha + 0.04 * breathe + mouseLift
+        const grd = ctx.createRadialGradient(W * 0.5, cy, 0, W * 0.5, cy, Math.max(W, H) * 0.72)
+        grd.addColorStop(0,   `hsla(${b.hue}, ${b.sat}%, 62%, ${alpha})`)
+        grd.addColorStop(0.4, `hsla(${b.hue + 15}, ${b.sat - 10}%, 50%, ${alpha * 0.5})`)
+        grd.addColorStop(1,   `hsla(${b.hue}, ${b.sat}%, 40%, 0)`)
+        ctx.fillStyle = grd
+        ctx.fillRect(0, 0, W, H)
+      })
 
-                          const nowMs = Date.now()
-                          if (nowMs - lastComet > 2800 + Math.random() * 2000) { spawnComet(); lastComet = nowMs }
-                          for (let i = comets.length - 1; i >= 0; i--) {
-                                      const c = comets[i]; c.x += c.vx; c.y += c.vy; c.life++
-                                      const prog = c.life / c.maxLife
-                                      const alpha = Math.sin(prog * Math.PI) * 0.55
-                                      const tailLen = 28 + c.size * 8
-                                      const grd = ctx.createLinearGradient(c.x, c.y, c.x - c.vx * tailLen, c.y - c.vy * tailLen)
-                                      grd.addColorStop(0, `hsla(${c.hue},80%,78%,${alpha})`); grd.addColorStop(1, `hsla(${c.hue},70%,65%,0)`)
-                                      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x - c.vx * tailLen, c.y - c.vy * tailLen)
-                                      ctx.strokeStyle = grd; ctx.lineWidth = c.size * (1 - prog * 0.6); ctx.lineCap = 'round'; ctx.stroke()
-                                      ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 1.5 * (1 - prog * 0.5), 0, TAU)
-                                      ctx.fillStyle = `hsla(${c.hue},90%,88%,${alpha * 1.3})`; ctx.fill()
-                                      if (c.life >= c.maxLife) comets.splice(i, 1)
-                          }
+      // ── 2. Contour / topology lines
+      ctx.save()
+      ctx.lineCap = 'round'
 
-                          animId = requestAnimationFrame(draw)
-                }
-          draw()
+      for (let li = 0; li < LINE_COUNT; li++) {
+        const progress = li / (LINE_COUNT - 1)        // 0 → 1 top to bottom
+        const baseY = progress                        // normalised Y centre
 
-                return () => {
-                          cancelAnimationFrame(animId)
-                          window.removeEventListener('mousemove', onMove)
-                          window.removeEventListener('mouseleave', onLeave)
-                          window.removeEventListener('resize', resize)
-                }
+        // Each line has its own temporal phase
+        const linePhase = li * 0.41 + t * (0.5 + 0.3 * Math.sin(li * 0.19))
+
+        // Hue cycles from violet → indigo → rose along line index
+        const hue = 245 + progress * 70
+        // Lines near the vertical midzone glow brighter
+        const centreProx = 1 - Math.abs(progress - 0.52) * 2.2
+        const baseAlpha = 0.04 + Math.max(0, centreProx) * 0.09
+
+        ctx.beginPath()
+        let first = true
+
+        for (let si = 0; si <= LINE_SEGS; si++) {
+          const nx = si / LINE_SEGS              // normalised x 0→1
+
+          // ── Noise displacement
+          const noiseY = sn(nx * 3.2, baseY * 2.8 + linePhase, t) * 0.09
+
+          // ── Mouse warp: gravitational lens
+          const dx = nx - mx
+          const dy = baseY - my
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          let warpX = 0
+          let warpY = 0
+          if (dist < WARP_RADIUS && dist > 0.001) {
+            const falloff = (1 - dist / WARP_RADIUS)
+            const falloff2 = falloff * falloff           // quadratic = sharper centre
+            // Push lines away from cursor (repulsion = more dramatic / readable)
+            warpX = -(dx / dist) * falloff2 * WARP_STRENGTH * 0.06
+            warpY = -(dy / dist) * falloff2 * WARP_STRENGTH
+          }
+
+          const px = (nx + warpX) * W
+          const py = (baseY + noiseY + warpY) * H
+
+          if (first) { ctx.moveTo(px, py); first = false }
+          else ctx.lineTo(px, py)
+        }
+
+        // Alpha pulses gently with a slow sine per line
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.4 + li * 0.37)
+        const alpha = baseAlpha * (0.6 + 0.4 * pulse)
+
+        ctx.strokeStyle = `hsla(${hue}, 70%, 72%, ${alpha})`
+        ctx.lineWidth = 0.8
+        ctx.stroke()
+      }
+
+      // ── 3. Cursor lens highlight ring — minimal, elegant
+      if (mouse.active) {
+        const cx = mx * W
+        const cy = my * H
+        const fadeIn = Math.min(1, t * 10)   // fade in on first frame
+        const ringR = W * 0.12
+        const ringGrd = ctx.createRadialGradient(cx, cy, ringR * 0.6, cx, cy, ringR)
+        ringGrd.addColorStop(0, `hsla(270, 60%, 70%, ${0.0})`)
+        ringGrd.addColorStop(0.7, `hsla(270, 60%, 70%, ${0.03 * fadeIn})`)
+        ringGrd.addColorStop(1, `hsla(270, 60%, 70%, 0)`)
+        ctx.fillStyle = ringGrd
+        ctx.fillRect(0, 0, W, H)
+      }
+
+      ctx.restore()
+
+      // ── 4. Vignette — keeps edges dark, draws eye to centre
+      const vig = ctx.createRadialGradient(W * 0.5, H * 0.46, H * 0.1, W * 0.5, H * 0.46, W * 0.72)
+      vig.addColorStop(0, 'transparent')
+      vig.addColorStop(1, 'rgba(4,4,14,0.72)')
+      ctx.fillStyle = vig
+      ctx.fillRect(0, 0, W, H)
+
+      animId = requestAnimationFrame(draw)
+    }
+
+    draw()
+
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseleave', onLeave)
+      window.removeEventListener('resize', resize)
+    }
   }, [])
 
   return (
-          <canvas
-                    ref={canvasRef}
-                    style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
-                  />
-        )
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  )
 }
